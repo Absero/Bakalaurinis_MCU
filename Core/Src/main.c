@@ -19,7 +19,12 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "adc.h"
+#include "dac.h"
+#include "dma.h"
+#include "tim.h"
 #include "usb_device.h"
+#include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -49,15 +54,6 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-ADC_HandleTypeDef hadc2;
-DMA_HandleTypeDef hdma_adc2;
-
-DAC_HandleTypeDef hdac;
-DMA_HandleTypeDef hdma_dac_ch1;
-
-TIM_HandleTypeDef htim3;
-TIM_HandleTypeDef htim6;
-TIM_HandleTypeDef htim7;
 
 /* USER CODE BEGIN PV */
 
@@ -87,13 +83,6 @@ uint8_t Presence = 0;
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-static void MX_GPIO_Init(void);
-static void MX_DMA_Init(void);
-static void MX_ADC2_Init(void);
-static void MX_TIM3_Init(void);
-static void MX_TIM6_Init(void);
-static void MX_DAC_Init(void);
-static void MX_TIM7_Init(void);
 /* USER CODE BEGIN PFP */
 void generateSine(uint16_t *array, uint32_t len, uint16_t amplitude);
 void ledsToggle();
@@ -162,15 +151,14 @@ int main(void) {
 	HAL_GPIO_TogglePin(led1_GPIO_Port, led1_Pin);
 
 	CHANGE_SINE_F(50);
-	//TODO sugeneruot perkelus visas init ir panasiai i atskirus failus del tvarkos cia (kube)
 
 	HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*) dacSignal, DAC_SIGNAL_STEPS, DAC_ALIGN_12B_R);
-	HAL_TIM_Base_Start(&htim7);
+	HAL_TIM_Base_Start(&htim7);	// Timer for sine wave
 
 	HAL_ADC_Start_DMA(&hadc2, (uint32_t*) mPaketasSiuntimui.adcData, KANALU_SKAICIUS);
-	HAL_TIM_Base_Start(&htim3);
+	HAL_TIM_Base_Start(&htim3); // Timer for ADC
 
-	HAL_TIM_Base_Start(&htim6);
+	HAL_TIM_Base_Start(&htim6); // Timer for OneWire protocol delays
 
 	/* USER CODE END 2 */
 
@@ -254,334 +242,6 @@ void SystemClock_Config(void) {
 	if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK) {
 		Error_Handler();
 	}
-}
-
-/**
- * @brief ADC2 Initialization Function
- * @param None
- * @retval None
- */
-static void MX_ADC2_Init(void) {
-
-	/* USER CODE BEGIN ADC2_Init 0 */
-
-	/* USER CODE END ADC2_Init 0 */
-
-	ADC_ChannelConfTypeDef sConfig = { 0 };
-
-	/* USER CODE BEGIN ADC2_Init 1 */
-
-	/* USER CODE END ADC2_Init 1 */
-	/** Common config
-	 */
-	hadc2.Instance = ADC2;
-	hadc2.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV1;
-	hadc2.Init.Resolution = ADC_RESOLUTION_12B;
-	hadc2.Init.ScanConvMode = ADC_SCAN_ENABLE;
-	hadc2.Init.ContinuousConvMode = DISABLE;
-	hadc2.Init.DiscontinuousConvMode = DISABLE;
-	hadc2.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_RISING;
-	hadc2.Init.ExternalTrigConv = ADC_EXTERNALTRIGCONV_T3_TRGO;
-	hadc2.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-	hadc2.Init.NbrOfConversion = 10;
-	hadc2.Init.DMAContinuousRequests = ENABLE;
-	hadc2.Init.EOCSelection = ADC_EOC_SEQ_CONV;
-	hadc2.Init.LowPowerAutoWait = DISABLE;
-	hadc2.Init.Overrun = ADC_OVR_DATA_OVERWRITTEN;
-	if (HAL_ADC_Init(&hadc2) != HAL_OK) {
-		Error_Handler();
-	}
-	/** Configure Regular Channel
-	 */
-	sConfig.Channel = ADC_CHANNEL_2;
-	sConfig.Rank = ADC_REGULAR_RANK_1;
-	sConfig.SingleDiff = ADC_SINGLE_ENDED;
-	sConfig.SamplingTime = ADC_SAMPLETIME_181CYCLES_5;
-	sConfig.OffsetNumber = ADC_OFFSET_NONE;
-	sConfig.Offset = 0;
-	if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK) {
-		Error_Handler();
-	}
-	/** Configure Regular Channel
-	 */
-	sConfig.Channel = ADC_CHANNEL_3;
-	sConfig.Rank = ADC_REGULAR_RANK_2;
-	if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK) {
-		Error_Handler();
-	}
-	/** Configure Regular Channel
-	 */
-	sConfig.Channel = ADC_CHANNEL_4;
-	sConfig.Rank = ADC_REGULAR_RANK_3;
-	if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK) {
-		Error_Handler();
-	}
-	/** Configure Regular Channel
-	 */
-	sConfig.Channel = ADC_CHANNEL_5;
-	sConfig.Rank = ADC_REGULAR_RANK_4;
-	if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK) {
-		Error_Handler();
-	}
-	/** Configure Regular Channel
-	 */
-	sConfig.Channel = ADC_CHANNEL_6;
-	sConfig.Rank = ADC_REGULAR_RANK_5;
-	if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK) {
-		Error_Handler();
-	}
-	/** Configure Regular Channel
-	 */
-	sConfig.Channel = ADC_CHANNEL_7;
-	sConfig.Rank = ADC_REGULAR_RANK_6;
-	if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK) {
-		Error_Handler();
-	}
-	/** Configure Regular Channel
-	 */
-	sConfig.Channel = ADC_CHANNEL_8;
-	sConfig.Rank = ADC_REGULAR_RANK_7;
-	if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK) {
-		Error_Handler();
-	}
-	/** Configure Regular Channel
-	 */
-	sConfig.Channel = ADC_CHANNEL_9;
-	sConfig.Rank = ADC_REGULAR_RANK_8;
-	if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK) {
-		Error_Handler();
-	}
-	/** Configure Regular Channel
-	 */
-	sConfig.Channel = ADC_CHANNEL_10;
-	sConfig.Rank = ADC_REGULAR_RANK_9;
-	if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK) {
-		Error_Handler();
-	}
-	/** Configure Regular Channel
-	 */
-	sConfig.Channel = ADC_CHANNEL_11;
-	sConfig.Rank = ADC_REGULAR_RANK_10;
-	if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK) {
-		Error_Handler();
-	}
-	/* USER CODE BEGIN ADC2_Init 2 */
-
-	/* USER CODE END ADC2_Init 2 */
-
-}
-
-/**
- * @brief DAC Initialization Function
- * @param None
- * @retval None
- */
-static void MX_DAC_Init(void) {
-
-	/* USER CODE BEGIN DAC_Init 0 */
-
-	/* USER CODE END DAC_Init 0 */
-
-	DAC_ChannelConfTypeDef sConfig = { 0 };
-
-	/* USER CODE BEGIN DAC_Init 1 */
-
-	/* USER CODE END DAC_Init 1 */
-	/** DAC Initialization
-	 */
-	hdac.Instance = DAC;
-	if (HAL_DAC_Init(&hdac) != HAL_OK) {
-		Error_Handler();
-	}
-	/** DAC channel OUT1 config
-	 */
-	sConfig.DAC_Trigger = DAC_TRIGGER_T7_TRGO;
-	sConfig.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
-	if (HAL_DAC_ConfigChannel(&hdac, &sConfig, DAC_CHANNEL_1) != HAL_OK) {
-		Error_Handler();
-	}
-	/* USER CODE BEGIN DAC_Init 2 */
-
-	/* USER CODE END DAC_Init 2 */
-
-}
-
-/**
- * @brief TIM3 Initialization Function
- * @param None
- * @retval None
- */
-static void MX_TIM3_Init(void) {
-
-	/* USER CODE BEGIN TIM3_Init 0 */
-
-	/* USER CODE END TIM3_Init 0 */
-
-	TIM_ClockConfigTypeDef sClockSourceConfig = { 0 };
-	TIM_MasterConfigTypeDef sMasterConfig = { 0 };
-	TIM_OC_InitTypeDef sConfigOC = { 0 };
-
-	/* USER CODE BEGIN TIM3_Init 1 */
-
-	/* USER CODE END TIM3_Init 1 */
-	htim3.Instance = TIM3;
-	htim3.Init.Prescaler = 48000 - 1;
-	htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-	htim3.Init.Period = 1000 - 1;
-	htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-	htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
-	if (HAL_TIM_Base_Init(&htim3) != HAL_OK) {
-		Error_Handler();
-	}
-	sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-	if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK) {
-		Error_Handler();
-	}
-	if (HAL_TIM_OC_Init(&htim3) != HAL_OK) {
-		Error_Handler();
-	}
-	sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
-	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-	if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK) {
-		Error_Handler();
-	}
-	sConfigOC.OCMode = TIM_OCMODE_TIMING;
-	sConfigOC.Pulse = 0;
-	sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-	sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-	if (HAL_TIM_OC_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_4) != HAL_OK) {
-		Error_Handler();
-	}
-	/* USER CODE BEGIN TIM3_Init 2 */
-
-	/* USER CODE END TIM3_Init 2 */
-
-}
-
-/**
- * @brief TIM6 Initialization Function
- * @param None
- * @retval None
- */
-static void MX_TIM6_Init(void) {
-
-	/* USER CODE BEGIN TIM6_Init 0 */
-
-	/* USER CODE END TIM6_Init 0 */
-
-	TIM_MasterConfigTypeDef sMasterConfig = { 0 };
-
-	/* USER CODE BEGIN TIM6_Init 1 */
-
-	/* USER CODE END TIM6_Init 1 */
-	htim6.Instance = TIM6;
-	htim6.Init.Prescaler = 48 - 1;
-	htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
-	htim6.Init.Period = 0xfff;
-	htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-	if (HAL_TIM_Base_Init(&htim6) != HAL_OK) {
-		Error_Handler();
-	}
-	sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-	if (HAL_TIMEx_MasterConfigSynchronization(&htim6, &sMasterConfig) != HAL_OK) {
-		Error_Handler();
-	}
-	/* USER CODE BEGIN TIM6_Init 2 */
-
-	/* USER CODE END TIM6_Init 2 */
-
-}
-
-/**
- * @brief TIM7 Initialization Function
- * @param None
- * @retval None
- */
-static void MX_TIM7_Init(void) {
-
-	/* USER CODE BEGIN TIM7_Init 0 */
-
-	/* USER CODE END TIM7_Init 0 */
-
-	TIM_MasterConfigTypeDef sMasterConfig = { 0 };
-
-	/* USER CODE BEGIN TIM7_Init 1 */
-
-	/* USER CODE END TIM7_Init 1 */
-	htim7.Instance = TIM7;
-	htim7.Init.Prescaler = 48 - 1;
-	htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
-	htim7.Init.Period = 200 - 1;
-	htim7.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
-	if (HAL_TIM_Base_Init(&htim7) != HAL_OK) {
-		Error_Handler();
-	}
-	sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
-	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-	if (HAL_TIMEx_MasterConfigSynchronization(&htim7, &sMasterConfig) != HAL_OK) {
-		Error_Handler();
-	}
-	/* USER CODE BEGIN TIM7_Init 2 */
-
-	/* USER CODE END TIM7_Init 2 */
-
-}
-
-/**
- * Enable DMA controller clock
- */
-static void MX_DMA_Init(void) {
-
-	/* DMA controller clock enable */
-	__HAL_RCC_DMA2_CLK_ENABLE();
-	__HAL_RCC_DMA1_CLK_ENABLE();
-
-	/* DMA interrupt init */
-	/* DMA1_Channel3_IRQn interrupt configuration */
-	HAL_NVIC_SetPriority(DMA1_Channel3_IRQn, 0, 0);
-	HAL_NVIC_EnableIRQ(DMA1_Channel3_IRQn);
-	/* DMA2_Channel1_IRQn interrupt configuration */
-	HAL_NVIC_SetPriority(DMA2_Channel1_IRQn, 0, 0);
-	HAL_NVIC_EnableIRQ(DMA2_Channel1_IRQn);
-
-}
-
-/**
- * @brief GPIO Initialization Function
- * @param None
- * @retval None
- */
-static void MX_GPIO_Init(void) {
-	GPIO_InitTypeDef GPIO_InitStruct = { 0 };
-
-	/* GPIO Ports Clock Enable */
-	__HAL_RCC_GPIOF_CLK_ENABLE();
-	__HAL_RCC_GPIOC_CLK_ENABLE();
-	__HAL_RCC_GPIOA_CLK_ENABLE();
-	__HAL_RCC_GPIOB_CLK_ENABLE();
-	__HAL_RCC_GPIOE_CLK_ENABLE();
-
-	/*Configure GPIO pin Output Level */
-	HAL_GPIO_WritePin(temp_GPIO_Port, temp_Pin, GPIO_PIN_RESET);
-
-	/*Configure GPIO pin Output Level */
-	HAL_GPIO_WritePin(GPIOE, led1_Pin | led0_Pin, GPIO_PIN_RESET);
-
-	/*Configure GPIO pin : temp_Pin */
-	GPIO_InitStruct.Pin = temp_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-	HAL_GPIO_Init(temp_GPIO_Port, &GPIO_InitStruct);
-
-	/*Configure GPIO pins : led1_Pin led0_Pin */
-	GPIO_InitStruct.Pin = led1_Pin | led0_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
-
 }
 
 /* USER CODE BEGIN 4 */
