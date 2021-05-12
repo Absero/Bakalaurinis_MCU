@@ -180,6 +180,9 @@ int main(void) {
 				// Change sine wave frequency
 				CHANGE_SINE_F(*(uint16_t* ) (mUSB_data.data + 1));
 				break;
+			case 4:
+				// Change sine wave amplitude
+				generateSine(dacSignal, DAC_SIGNAL_STEPS, *(uint16_t*) (mUSB_data.data + 1));
 			default:
 				break;
 			}
