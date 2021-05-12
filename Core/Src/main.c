@@ -63,7 +63,7 @@ struct {
 	uint8_t usbDRDY :1;
 	uint8_t start :1;
 	uint8_t rem :5;
-} mVeliavos;
+} mFlags;
 
 struct {
 	uint8_t *data;
@@ -73,7 +73,7 @@ struct {
 volatile struct {
 	int16_t adcData[KANALU_SKAICIUS];
 	int16_t temperatura;
-} mPaketasSiuntimui;
+} mPacket;
 
 int16_t TEMP;
 float Temperature = 0;
@@ -95,13 +95,13 @@ uint8_t DS18B20_Read(void);
 void measTemp();
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
-	mVeliavos.adcDone = 1;
+	mFlags.adcDone = 1;
 }
 
 void CDC_ReceiveCallback(uint8_t *buf, uint32_t len) {
 	mUSB_data.data = buf;
 	mUSB_data.len = len;
-	mVeliavos.usbDRDY = 1;
+	mFlags.usbDRDY = 1;
 }
 
 /* USER CODE END PFP */
@@ -155,7 +155,7 @@ int main(void) {
 	HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*) dacSignal, DAC_SIGNAL_STEPS, DAC_ALIGN_12B_R);
 	HAL_TIM_Base_Start(&htim7);	// Timer for sine wave
 
-	HAL_ADC_Start_DMA(&hadc2, (uint32_t*) mPaketasSiuntimui.adcData, KANALU_SKAICIUS);
+	HAL_ADC_Start_DMA(&hadc2, (uint32_t*) mPacket.adcData, KANALU_SKAICIUS);
 	HAL_TIM_Base_Start(&htim3); // Timer for ADC
 
 	HAL_TIM_Base_Start(&htim6); // Timer for OneWire protocol delays
@@ -165,11 +165,11 @@ int main(void) {
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
-		if (mVeliavos.usbDRDY) {
+		if (mFlags.usbDRDY) {
 			switch (*mUSB_data.data) {
 			case 0:
 			case 1:
-				mVeliavos.start = *mUSB_data.data;
+				mFlags.start = *mUSB_data.data;
 				break;
 			case 2:
 				// Change ADC timer period
@@ -186,17 +186,17 @@ int main(void) {
 			default:
 				break;
 			}
-			mVeliavos.usbDRDY = 0;
+			mFlags.usbDRDY = 0;
 		}
 
-		if (mVeliavos.adcDone) {
-			mVeliavos.adcDone = 0;
+		if (mFlags.adcDone) {
+			mFlags.adcDone = 0;
 			ledsToggle();
 			measTemp();
-			mPaketasSiuntimui.temperatura = TEMP;
+			mPacket.temperatura = TEMP;
 
-			if (mVeliavos.start)
-				CDC_Transmit_FS((uint8_t*) mPaketasSiuntimui.adcData, KANALU_SKAICIUS * 2 + 2);
+			if (mFlags.start)
+				CDC_Transmit_FS((uint8_t*) mPacket.adcData, KANALU_SKAICIUS * 2 + 2);
 		}
 
 		/* USER CODE END WHILE */
