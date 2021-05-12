@@ -42,7 +42,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
-#define KANALU_SKAICIUS 10
+#define N_OF_CHANNELS 10
 #define DAC_SIGNAL_STEPS 100
 #define CHANGE_SINE_F(f) TIM7->ARR = ( 1.0 / f * HAL_RCC_GetHCLKFreq() / (TIM7->PSC+1) / DAC_SIGNAL_STEPS) - 1
 
@@ -57,7 +57,6 @@
 
 /* USER CODE BEGIN PV */
 
-//volatile int16_t mAdcData[KANALU_SKAICIUS]={0};
 struct {
 	uint8_t adcDone :1;
 	uint8_t usbDRDY :1;
@@ -71,7 +70,7 @@ struct {
 } mUSB_data;
 
 volatile struct {
-	int16_t adcData[KANALU_SKAICIUS];
+	int16_t adcData[N_OF_CHANNELS];
 	int16_t temperatura;
 } mPacket;
 
@@ -155,7 +154,7 @@ int main(void) {
 	HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*) dacSignal, DAC_SIGNAL_STEPS, DAC_ALIGN_12B_R);
 	HAL_TIM_Base_Start(&htim7);	// Timer for sine wave
 
-	HAL_ADC_Start_DMA(&hadc2, (uint32_t*) mPacket.adcData, KANALU_SKAICIUS);
+	HAL_ADC_Start_DMA(&hadc2, (uint32_t*) mPacket.adcData, N_OF_CHANNELS);
 	HAL_TIM_Base_Start(&htim3); // Timer for ADC
 
 	HAL_TIM_Base_Start(&htim6); // Timer for OneWire protocol delays
@@ -196,7 +195,7 @@ int main(void) {
 			mPacket.temperatura = TEMP;
 
 			if (mFlags.start)
-				CDC_Transmit_FS((uint8_t*) mPacket.adcData, KANALU_SKAICIUS * 2 + 2);
+				CDC_Transmit_FS((uint8_t*) mPacket.adcData, N_OF_CHANNELS * 2 + 2);
 		}
 
 		/* USER CODE END WHILE */
